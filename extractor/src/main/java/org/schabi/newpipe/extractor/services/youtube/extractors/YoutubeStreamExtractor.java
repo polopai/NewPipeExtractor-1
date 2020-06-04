@@ -592,7 +592,8 @@ public class YoutubeStreamExtractor extends StreamExtractor {
     private final static String DECRYPTION_AKAMAIZED_SHORT_STRING_REGEX =
             "\\bc\\s*&&\\s*d\\.set\\([^,]+\\s*,\\s*(:encodeURIComponent\\s*\\()([a-zA-Z0-9$]+)\\(";
 
-    private volatile String decryptionCode = "";
+    private static String decryptionCode = "";
+    private static List<String> lastFetchUrl = new ArrayList<>();
 
     @Override
     public void onFetchPage(@Nonnull Downloader downloader) throws IOException, ExtractionException {
@@ -629,8 +630,11 @@ public class YoutubeStreamExtractor extends StreamExtractor {
             throw new ContentNotAvailableException("Got error: \"" + reason + "\"");
         }
 
-        if (decryptionCode.isEmpty()) {
+        if (decryptionCode.isEmpty() || lastFetchUrl.contains(url)) {
             decryptionCode = loadDecryptionCode(playerUrl);
+        }else{
+            lastFetchUrl.clear();
+            lastFetchUrl.add(url);
         }
 
         if (subtitlesInfos.isEmpty()) {
