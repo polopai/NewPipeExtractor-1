@@ -183,9 +183,11 @@ public class YoutubeParsingHelper {
     }
 
     public static Calendar parseDateFrom(String textualUploadDate) throws ParsingException {
-        Date date;
+        final Date date;
         try {
-            date = new SimpleDateFormat("yyyy-MM-dd").parse(textualUploadDate);
+            final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+            sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
+            date = sdf.parse(textualUploadDate);
         } catch (ParseException e) {
             throw new ParsingException("Could not parse date: \"" + textualUploadDate + "\"", e);
         }
@@ -197,8 +199,13 @@ public class YoutubeParsingHelper {
 
     public static JsonObject getInitialData(String html) throws ParsingException {
         try {
-            String initialData = Parser.matchGroup1("window\\[\"ytInitialData\"\\]\\s*=\\s*(\\{.*?\\});", html);
-            return JsonParser.object().from(initialData);
+            try {
+                final String initialData = Parser.matchGroup1("window\\[\"ytInitialData\"\\]\\s*=\\s*(\\{.*?\\});", html);
+                return JsonParser.object().from(initialData);
+            } catch (Parser.RegexException e) {
+                final String initialData = Parser.matchGroup1("var\\s*ytInitialData\\s*=\\s*(\\{.*?\\});", html);
+                return JsonParser.object().from(initialData);
+            }
         } catch (JsonParserException | Parser.RegexException e) {
             throw new ParsingException("Could not get ytInitialData", e);
         }
