@@ -13,12 +13,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import static org.schabi.newpipe.extractor.services.soundcloud.SoundcloudParsingHelper.SOUNDCLOUD_API_V2_URL;
+import static org.schabi.newpipe.extractor.utils.Utils.HTTPS;
+import static org.schabi.newpipe.extractor.utils.Utils.replaceHttpWithHttps;
+
 /**
  * Extract the "followings" from a user in SoundCloud.
  */
 public class SoundcloudSubscriptionExtractor extends SubscriptionExtractor {
 
-    public SoundcloudSubscriptionExtractor(SoundcloudService service) {
+    public SoundcloudSubscriptionExtractor(final SoundcloudService service) {
         super(service, Collections.singletonList(ContentSource.CHANNEL_URL));
     }
 
@@ -28,47 +32,47 @@ public class SoundcloudSubscriptionExtractor extends SubscriptionExtractor {
     }
 
     @Override
-    public List<SubscriptionItem> fromChannelUrl(String channelUrl) throws IOException, ExtractionException {
-        if (channelUrl == null) throw new InvalidSourceException("channel url is null");
+    public List<SubscriptionItem> fromChannelUrl(final String channelUrl) throws IOException,
+            ExtractionException {
+        if (channelUrl == null) {
+            throw new InvalidSourceException("Channel url is null");
+        }
 
-        String id;
+        final String id;
         try {
             id = service.getChannelLHFactory().fromUrl(getUrlFrom(channelUrl)).getId();
-        } catch (ExtractionException e) {
+        } catch (final ExtractionException e) {
             throw new InvalidSourceException(e);
         }
 
-        String apiUrl = "https://api-v2.soundcloud.com/users/" + id + "/followings"
-                + "?client_id=" + SoundcloudParsingHelper.clientId()
-                + "&limit=200";
-        ChannelInfoItemsCollector collector = new ChannelInfoItemsCollector(service.getServiceId());
+        final String apiUrl = SOUNDCLOUD_API_V2_URL + "users/" + id + "/followings" + "?client_id="
+                + SoundcloudParsingHelper.clientId() + "&limit=200";
+        final ChannelInfoItemsCollector collector = new ChannelInfoItemsCollector(service
+                .getServiceId());
         // ± 2000 is the limit of followings on SoundCloud, so this minimum should be enough
         SoundcloudParsingHelper.getUsersFromApiMinItems(2500, collector, apiUrl);
 
         return toSubscriptionItems(collector.getItems());
     }
 
-    private String getUrlFrom(String channelUrl) {
-        channelUrl = channelUrl.replace("http://", "https://").trim();
-
-        if (!channelUrl.startsWith("https://")) {
-            if (!channelUrl.contains("soundcloud.com/")) {
-                channelUrl = "https://soundcloud.com/" + channelUrl;
-            } else {
-                channelUrl = "https://" + channelUrl;
-            }
+    private String getUrlFrom(final String channelUrl) {
+        final String fixedUrl = replaceHttpWithHttps(channelUrl);
+        if (fixedUrl.startsWith(HTTPS)) {
+            return channelUrl;
+        } else if (!fixedUrl.contains("soundcloud.com/")) {
+            return "https://soundcloud.com/" + fixedUrl;
+        } else {
+            return HTTPS + fixedUrl;
         }
-
-        return channelUrl;
     }
 
     /*//////////////////////////////////////////////////////////////////////////
     // Utils
     //////////////////////////////////////////////////////////////////////////*/
 
-    private List<SubscriptionItem> toSubscriptionItems(List<ChannelInfoItem> items) {
-        List<SubscriptionItem> result = new ArrayList<>(items.size());
-        for (ChannelInfoItem item : items) {
+    private List<SubscriptionItem> toSubscriptionItems(final List<ChannelInfoItem> items) {
+        final List<SubscriptionItem> result = new ArrayList<>(items.size());
+        for (final ChannelInfoItem item : items) {
             result.add(new SubscriptionItem(item.getServiceId(), item.getUrl(), item.getName()));
         }
         return result;

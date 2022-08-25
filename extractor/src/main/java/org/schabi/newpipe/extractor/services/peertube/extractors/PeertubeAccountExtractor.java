@@ -1,9 +1,9 @@
 package org.schabi.newpipe.extractor.services.peertube.extractors;
 
+import com.grack.nanojson.JsonArray;
 import com.grack.nanojson.JsonObject;
 import com.grack.nanojson.JsonParser;
 import com.grack.nanojson.JsonParserException;
-
 import org.schabi.newpipe.extractor.Page;
 import org.schabi.newpipe.extractor.StreamingService;
 import org.schabi.newpipe.extractor.channel.ChannelExtractor;
@@ -11,6 +11,7 @@ import org.schabi.newpipe.extractor.downloader.Downloader;
 import org.schabi.newpipe.extractor.downloader.Response;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.schabi.newpipe.extractor.exceptions.ParsingException;
+import org.schabi.newpipe.extractor.exceptions.ReCaptchaException;
 import org.schabi.newpipe.extractor.linkhandler.ListLinkHandler;
 import org.schabi.newpipe.extractor.services.peertube.PeertubeParsingHelper;
 import org.schabi.newpipe.extractor.services.peertube.linkHandler.PeertubeChannelLinkHandlerFactory;
@@ -19,9 +20,8 @@ import org.schabi.newpipe.extractor.stream.StreamInfoItemsCollector;
 import org.schabi.newpipe.extractor.utils.JsonUtils;
 import org.schabi.newpipe.extractor.utils.Utils;
 
-import java.io.IOException;
-
 import javax.annotation.Nonnull;
+import java.io.IOException;
 
 import static org.schabi.newpipe.extractor.services.peertube.PeertubeParsingHelper.COUNT_KEY;
 import static org.schabi.newpipe.extractor.services.peertube.PeertubeParsingHelper.ITEMS_PER_PAGE;
@@ -32,8 +32,10 @@ import static org.schabi.newpipe.extractor.utils.Utils.isNullOrEmpty;
 public class PeertubeAccountExtractor extends ChannelExtractor {
     private JsonObject json;
     private final String baseUrl;
+    private static final String ACCOUNTS = "accounts/";
 
-    public PeertubeAccountExtractor(final StreamingService service, final ListLinkHandler linkHandler) throws ParsingException {
+    public PeertubeAccountExtractor(final StreamingService service,
+                                    final ListLinkHandler linkHandler) throws ParsingException {
         super(service, linkHandler);
         this.baseUrl = getBaseUrl();
     }
@@ -43,7 +45,7 @@ public class PeertubeAccountExtractor extends ChannelExtractor {
         String value;
         try {
             value = JsonUtils.getString(json, "avatar.path");
-        } catch (Exception e) {
+        } catch (final Exception e) {
             value = "/client/assets/images/default-avatar.png";
         }
         return baseUrl + value;
@@ -60,15 +62,39 @@ public class PeertubeAccountExtractor extends ChannelExtractor {
     }
 
     @Override
-    public long getSubscriberCount() {
-        return json.getLong("followersCount");
+    public long getSubscriberCount() throws ParsingException {
+        // The subscriber count cannot be retrieved directly. It needs to be calculated.
+        // An accounts subscriber count is the number of the channel owner's subscriptions
+        // plus the sum of all sub channels subscriptions.
+        long subscribersCount = json.getLong("followersCount");
+        String accountVideoChannelUrl = baseUrl + PeertubeChannelLinkHandlerFactory.API_ENDPOINT;
+        if (getId().contains(ACCOUNTS)) {
+            accountVideoChannelUrl += getId();
+        } else {
+            accountVideoChannelUrl += ACCOUNTS + getId();
+        }
+        accountVideoChannelUrl += "/video-channels";
+
+        try {
+            final String responseBody = getDownloader().get(accountVideoChannelUrl).responseBody();
+            final JsonObject jsonResponse = JsonParser.object().from(responseBody);
+            final JsonArray videoChannels = jsonResponse.getArray("data");
+            for (final Object videoChannel : videoChannels) {
+                final JsonObject videoChannelJsonObject = (JsonObject) videoChannel;
+                subscribersCount += videoChannelJsonObject.getInt("followersCount");
+            }
+        } catch (final IOException | JsonParserException | ReCaptchaException ignored) {
+            // something went wrong during video channels extraction,
+            // only return subscribers of ownerAccount
+        }
+        return subscribersCount;
     }
 
     @Override
     public String getDescription() {
         try {
             return JsonUtils.getString(json, "description");
-        } catch (ParsingException e) {
+        } catch (final ParsingException e) {
             return "No description";
         }
     }
@@ -88,11 +114,16 @@ public class PeertubeAccountExtractor extends ChannelExtractor {
         return "";
     }
 
+    @Override
+    public boolean isVerified() throws ParsingException {
+        return false;
+    }
+
     @Nonnull
     @Override
     public InfoItemsPage<StreamInfoItem> getInitialPage() throws IOException, ExtractionException {
-        return getPage(new Page(
-                getUrl() + "/videos?" + START_KEY + "=0&" + COUNT_KEY + "=" + ITEMS_PER_PAGE));
+        return getPage(new Page(baseUrl + "/api/v1/" + getId() + "/videos?" + START_KEY + "=0&"
+                + COUNT_KEY + "=" + ITEMS_PER_PAGE));
     }
 
     @Override
@@ -104,23 +135,24 @@ public class PeertubeAccountExtractor extends ChannelExtractor {
 
         final Response response = getDownloader().get(page.getUrl());
 
-        JsonObject json = null;
+        JsonObject pageJson = null;
         if (response != null && !Utils.isBlank(response.responseBody())) {
             try {
-                json = JsonParser.object().from(response.responseBody());
-            } catch (Exception e) {
+                pageJson = JsonParser.object().from(response.responseBody());
+            } catch (final Exception e) {
                 throw new ParsingException("Could not parse json data for account info", e);
             }
         }
 
-        if (json != null) {
-            PeertubeParsingHelper.validate(json);
-            final long total = json.getLong("total");
+        if (pageJson != null) {
+            PeertubeParsingHelper.validate(pageJson);
+            final long total = pageJson.getLong("total");
 
             final StreamInfoItemsCollector collector = new StreamInfoItemsCollector(getServiceId());
-            collectStreamsFrom(collector, json, getBaseUrl());
+            collectStreamsFrom(collector, pageJson, getBaseUrl());
 
-            return new InfoItemsPage<>(collector, PeertubeParsingHelper.getNextPage(page.getUrl(), total));
+            return new InfoItemsPage<>(collector,
+                    PeertubeParsingHelper.getNextPage(page.getUrl(), total));
         } else {
             throw new ExtractionException("Unable to get PeerTube account info");
         }
@@ -130,14 +162,14 @@ public class PeertubeAccountExtractor extends ChannelExtractor {
     public void onFetchPage(@Nonnull final Downloader downloader)
             throws IOException, ExtractionException {
         String accountUrl = baseUrl + PeertubeChannelLinkHandlerFactory.API_ENDPOINT;
-        if (getId().contains("accounts/")) {
+        if (getId().contains(ACCOUNTS)) {
             accountUrl += getId();
         } else {
-            accountUrl += "accounts/" + getId();
+            accountUrl += ACCOUNTS + getId();
         }
 
         final Response response = downloader.get(accountUrl);
-        if (response != null && response.responseBody() != null) {
+        if (response != null) {
             setInitialData(response.responseBody());
         } else {
             throw new ExtractionException("Unable to extract PeerTube account data");
@@ -147,10 +179,12 @@ public class PeertubeAccountExtractor extends ChannelExtractor {
     private void setInitialData(final String responseBody) throws ExtractionException {
         try {
             json = JsonParser.object().from(responseBody);
-        } catch (JsonParserException e) {
+        } catch (final JsonParserException e) {
             throw new ExtractionException("Unable to extract PeerTube account data", e);
         }
-        if (json == null) throw new ExtractionException("Unable to extract PeerTube account data");
+        if (json == null) {
+            throw new ExtractionException("Unable to extract PeerTube account data");
+        }
     }
 
     @Nonnull

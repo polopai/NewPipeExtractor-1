@@ -5,6 +5,7 @@ public interface BaseStreamExtractorTest extends BaseExtractorTest {
     void testUploaderName() throws Exception;
     void testUploaderUrl() throws Exception;
     void testUploaderAvatarUrl() throws Exception;
+    void testSubscriberCount() throws Exception;
     void testSubChannelName() throws Exception;
     void testSubChannelUrl() throws Exception;
     void testSubChannelAvatarUrl() throws Exception;
@@ -17,7 +18,7 @@ public interface BaseStreamExtractorTest extends BaseExtractorTest {
     void testTextualUploadDate() throws Exception;
     void testLikeCount() throws Exception;
     void testDislikeCount() throws Exception;
-    void testRelatedStreams() throws Exception;
+    void testRelatedItems() throws Exception;
     void testAgeLimit() throws Exception;
     void testErrorMessage() throws Exception;
     void testAudioStreams() throws Exception;

@@ -1,25 +1,34 @@
 package org.schabi.newpipe.extractor.localization;
 
+import org.schabi.newpipe.extractor.exceptions.ParsingException;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 
 public class Localization implements Serializable {
     public static final Localization DEFAULT = new Localization("en", "GB");
 
-    @Nonnull private final String languageCode;
-    @Nullable private final String countryCode;
+    @Nonnull
+    private final String languageCode;
+    @Nullable
+    private final String countryCode;
 
     /**
-     * @param localizationCodeList a list of localization code, formatted like {@link #getLocalizationCode()}
+     * @param localizationCodeList a list of localization code, formatted like {@link
+     *                             #getLocalizationCode()}
      */
-    public static List<Localization> listFrom(String... localizationCodeList) {
+    public static List<Localization> listFrom(final String... localizationCodeList) {
         final List<Localization> toReturn = new ArrayList<>();
-        for (String localizationCode : localizationCodeList) {
+        for (final String localizationCode : localizationCodeList) {
             toReturn.add(fromLocalizationCode(localizationCode));
         }
         return Collections.unmodifiableList(toReturn);
@@ -28,10 +37,11 @@ public class Localization implements Serializable {
     /**
      * @param localizationCode a localization code, formatted like {@link #getLocalizationCode()}
      */
-    public static Localization fromLocalizationCode(String localizationCode) {
+    public static Localization fromLocalizationCode(final String localizationCode) {
         final int indexSeparator = localizationCode.indexOf("-");
 
-        final String languageCode, countryCode;
+        final String languageCode;
+        final String countryCode;
         if (indexSeparator != -1) {
             languageCode = localizationCode.substring(0, indexSeparator);
             countryCode = localizationCode.substring(indexSeparator + 1);
@@ -43,15 +53,16 @@ public class Localization implements Serializable {
         return new Localization(languageCode, countryCode);
     }
 
-    public Localization(@Nonnull String languageCode, @Nullable String countryCode) {
+    public Localization(@Nonnull final String languageCode, @Nullable final String countryCode) {
         this.languageCode = languageCode;
         this.countryCode = countryCode;
     }
 
-    public Localization(@Nonnull String languageCode) {
+    public Localization(@Nonnull final String languageCode) {
         this(languageCode, null);
     }
 
+    @Nonnull
     public String getLanguageCode() {
         return languageCode;
     }
@@ -65,7 +76,7 @@ public class Localization implements Serializable {
         return new Locale(getLanguageCode(), getCountryCode());
     }
 
-    public static Localization fromLocale(@Nonnull Locale locale) {
+    public static Localization fromLocale(@Nonnull final Locale locale) {
         return new Localization(locale.getLanguage(), locale.getCountry());
     }
 
@@ -83,20 +94,47 @@ public class Localization implements Serializable {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Localization)) return false;
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Localization)) {
+            return false;
+        }
 
-        Localization that = (Localization) o;
+        final Localization that = (Localization) o;
 
-        if (!languageCode.equals(that.languageCode)) return false;
-        return countryCode != null ? countryCode.equals(that.countryCode) : that.countryCode == null;
+        return languageCode.equals(that.languageCode)
+                && Objects.equals(countryCode, that.countryCode);
     }
 
     @Override
     public int hashCode() {
         int result = languageCode.hashCode();
-        result = 31 * result + (countryCode != null ? countryCode.hashCode() : 0);
+        result = 31 * result + Objects.hashCode(countryCode);
         return result;
+    }
+
+    /**
+     * Converts a three letter language code (ISO 639-2/T) to a Locale
+     * because limits of Java Locale class.
+     *
+     * @param code a three letter language code
+     * @return the Locale corresponding
+     */
+    public static Locale getLocaleFromThreeLetterCode(@Nonnull final String code)
+            throws ParsingException {
+        final String[] languages = Locale.getISOLanguages();
+        final Map<String, Locale> localeMap = new HashMap<>(languages.length);
+        for (final String language : languages) {
+            final Locale locale = new Locale(language);
+            localeMap.put(locale.getISO3Language(), locale);
+        }
+        if (localeMap.containsKey(code)) {
+            return localeMap.get(code);
+        } else {
+            throw new ParsingException(
+                    "Could not get Locale from this three letter language code" + code);
+        }
     }
 }

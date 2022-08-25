@@ -1,8 +1,9 @@
 package org.schabi.newpipe.extractor.services.peertube;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.schabi.newpipe.DownloaderTestImpl;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.schabi.newpipe.downloader.DownloaderTestImpl;
 import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.StreamingService;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
@@ -18,13 +19,16 @@ import java.util.Locale;
 
 import javax.annotation.Nullable;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.schabi.newpipe.extractor.ServiceList.PeerTube;
 
-public class PeertubeStreamExtractorTest {
+public abstract class PeertubeStreamExtractorTest extends DefaultStreamExtractorTest {
     private static final String BASE_URL = "/videos/watch/";
 
-    public static class WhatIsPeertube extends DefaultStreamExtractorTest {
+    @Override public boolean expectedHasAudioStreams() { return false; }
+    @Override public boolean expectedHasFrames() { return false; }
+
+    public static class WhatIsPeertube extends PeertubeStreamExtractorTest {
         private static final String ID = "9c9de5e8-0a1e-484a-b099-e80766180a6d";
         private static final String INSTANCE = "https://framatube.org";
         private static final int TIMESTAMP_MINUTE = 1;
@@ -32,7 +36,7 @@ public class PeertubeStreamExtractorTest {
         private static final String URL = INSTANCE + BASE_URL + ID + "?start=" + TIMESTAMP_MINUTE + "m" + TIMESTAMP_SECOND + "s";
         private static StreamExtractor extractor;
 
-        @BeforeClass
+        @BeforeAll
         public static void setUp() throws Exception {
             NewPipe.init(DownloaderTestImpl.getInstance());
             // setting instance might break test when running in parallel (!)
@@ -56,8 +60,8 @@ public class PeertubeStreamExtractorTest {
         @Override public StreamType expectedStreamType() { return StreamType.VIDEO_STREAM; }
         @Override public String expectedUploaderName() { return "Framasoft"; }
         @Override public String expectedUploaderUrl() { return "https://framatube.org/accounts/framasoft@framatube.org"; }
-        @Override public String expectedSubChannelName() { return "Les vidéos de Framasoft"; }
-        @Override public String expectedSubChannelUrl() { return "https://framatube.org/video-channels/bf54d359-cfad-4935-9d45-9d6be93f63e8"; }
+        @Override public String expectedSubChannelName() { return "A propos de PeerTube"; }
+        @Override public String expectedSubChannelUrl() { return "https://framatube.org/video-channels/joinpeertube"; }
         @Override public List<String> expectedDescriptionContains() { // CRLF line ending
             return Arrays.asList("**[Want to help to translate this video?](https://weblate.framasoft.org/projects/what-is-peertube-video/)**\r\n"
                     + "\r\n"
@@ -82,25 +86,68 @@ public class PeertubeStreamExtractorTest {
         @Override public long expectedViewCountAtLeast() { return 38600; }
         @Nullable @Override public String expectedUploadDate() { return "2018-10-01 10:52:46.396"; }
         @Nullable @Override public String expectedTextualUploadDate() { return "2018-10-01T10:52:46.396Z"; }
-        @Override public long expectedLikeCountAtLeast() { return 120; }
+        @Override public long expectedLikeCountAtLeast() { return 50; }
         @Override public long expectedDislikeCountAtLeast() { return 0; }
-        @Override public boolean expectedHasAudioStreams() { return false; }
-        @Override public boolean expectedHasFrames() { return false; }
         @Override public String expectedHost() { return "framatube.org"; }
-        @Override public String expectedPrivacy() { return "Public"; }
         @Override public String expectedCategory() { return "Science & Technology"; }
         @Override public String expectedLicence() { return "Attribution - Share Alike"; }
         @Override public Locale expectedLanguageInfo() { return Locale.forLanguageTag("en"); }
         @Override public List<String> expectedTags() { return Arrays.asList("framasoft", "peertube"); }
     }
 
-    public static class AgeRestricted extends DefaultStreamExtractorTest {
+    public static class HlsOnlyStreams extends PeertubeStreamExtractorTest {
+        private static final String ID = "41342cb4-6fa8-402d-a116-1f63a7f438a3";
+        private static final String INSTANCE = "https://tilvids.com";
+
+        private static final String URL = INSTANCE + BASE_URL + ID;
+        private static StreamExtractor extractor;
+
+        @BeforeAll
+        public static void setUp() throws Exception {
+            NewPipe.init(DownloaderTestImpl.getInstance());
+            // setting instance might break test when running in parallel (!)
+            PeerTube.setInstance(new PeertubeInstance(INSTANCE, "TILvids"));
+            extractor = PeerTube.getStreamExtractor(URL);
+            extractor.fetchPage();
+        }
+
+        @Override public StreamExtractor extractor() { return extractor; }
+        @Override public StreamingService expectedService() { return PeerTube; }
+        @Override public String expectedName() { return "A Goodbye to Flash Games"; }
+        @Override public String expectedId() { return ID; }
+        @Override public String expectedUrlContains() { return INSTANCE + BASE_URL + ID; }
+        @Override public String expectedOriginalUrlContains() { return URL; }
+
+        @Override public StreamType expectedStreamType() { return StreamType.VIDEO_STREAM; }
+        @Override public String expectedUploaderName() { return "Marinauts"; }
+        @Override public String expectedUploaderUrl() { return "https://tilvids.com/accounts/marinauts@tilvids.com"; }
+        @Override public String expectedSubChannelName() { return "Main marinauts channel"; }
+        @Override public String expectedSubChannelUrl() { return "https://tilvids.com/video-channels/marinauts_channel"; }
+        @Override public List<String> expectedDescriptionContains() { // CRLF line ending
+            return Arrays.asList("Goodbye", "Flash Games", "Anthony takes a minute", "Songs used:");
+        }
+        @Override public long expectedLength() { return 362; }
+        @Override public long expectedViewCountAtLeast() { return 20; }
+        @Nullable @Override public String expectedUploadDate() { return "2021-04-08 20:15:32.434"; }
+        @Nullable @Override public String expectedTextualUploadDate() { return "2021-04-08T20:15:32.434Z"; }
+        @Override public long expectedLikeCountAtLeast() { return 6; }
+        @Override public long expectedDislikeCountAtLeast() { return 0; }
+        @Override public boolean expectedHasSubtitles() { return false; }
+        @Override public String expectedHost() { return "tilvids.com"; }
+        @Override public String expectedCategory() { return "Entertainment"; }
+        @Override public String expectedLicence() { return "Unknown"; }
+        @Override public Locale expectedLanguageInfo() { return null; }
+        @Override public List<String> expectedTags() { return Arrays.asList("Marinauts", "adobe flash", "adobe flash player", "flash games", "the marinauts"); }
+    }
+
+    @Disabled("Test broken, SSL problem")
+    public static class AgeRestricted extends PeertubeStreamExtractorTest {
         private static final String ID = "dbd8e5e1-c527-49b6-b70c-89101dbb9c08";
         private static final String INSTANCE = "https://nocensoring.net";
         private static final String URL = INSTANCE + "/videos/embed/" + ID;
         private static StreamExtractor extractor;
 
-        @BeforeClass
+        @BeforeAll
         public static void setUp() throws Exception {
             NewPipe.init(DownloaderTestImpl.getInstance());;
             // setting instance might break test when running in parallel (!)
@@ -132,18 +179,14 @@ public class PeertubeStreamExtractorTest {
         @Override public long expectedLikeCountAtLeast() { return 1; }
         @Override public long expectedDislikeCountAtLeast() { return 0; }
         @Override public int expectedAgeLimit() { return 18; }
-        @Override public boolean expectedHasAudioStreams() { return false; }
-        @Override public boolean expectedHasSubtitles() { return false; }
-        @Override public boolean expectedHasFrames() { return false; }
         @Override public String expectedHost() { return "nocensoring.net"; }
-        @Override public String expectedPrivacy() { return "Public"; }
         @Override public String expectedCategory() { return "Art"; }
         @Override public String expectedLicence() { return "Attribution"; }
         @Override public List<String> expectedTags() { return Arrays.asList("Covid-19", "Gérôme-Mary trebor", "Horreur et beauté", "court-métrage", "nue artistique"); }
     }
 
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         NewPipe.init(DownloaderTestImpl.getInstance());
         PeerTube.setInstance(new PeertubeInstance("https://peertube.cpy.re", "PeerTube test server"));

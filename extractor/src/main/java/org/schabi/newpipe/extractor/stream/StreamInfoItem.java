@@ -32,14 +32,21 @@ public class StreamInfoItem extends InfoItem {
     private final StreamType streamType;
 
     private String uploaderName;
+    private String shortDescription;
     private String textualUploadDate;
-    @Nullable private DateWrapper uploadDate;
+    @Nullable
+    private DateWrapper uploadDate;
     private long viewCount = -1;
     private long duration = -1;
 
     private String uploaderUrl = null;
+    private String uploaderAvatarUrl = null;
+    private boolean uploaderVerified = false;
 
-    public StreamInfoItem(int serviceId, String url, String name, StreamType streamType) {
+    public StreamInfoItem(final int serviceId,
+                          final String url,
+                          final String name,
+                          final StreamType streamType) {
         super(InfoType.STREAM, serviceId, url, name);
         this.streamType = streamType;
     }
@@ -52,23 +59,23 @@ public class StreamInfoItem extends InfoItem {
         return uploaderName;
     }
 
-    public void setUploaderName(String uploader_name) {
-        this.uploaderName = uploader_name;
+    public void setUploaderName(final String uploaderName) {
+        this.uploaderName = uploaderName;
     }
 
     public long getViewCount() {
         return viewCount;
     }
 
-    public void setViewCount(long view_count) {
-        this.viewCount = view_count;
+    public void setViewCount(final long viewCount) {
+        this.viewCount = viewCount;
     }
 
     public long getDuration() {
         return duration;
     }
 
-    public void setDuration(long duration) {
+    public void setDuration(final long duration) {
         this.duration = duration;
     }
 
@@ -76,8 +83,25 @@ public class StreamInfoItem extends InfoItem {
         return uploaderUrl;
     }
 
-    public void setUploaderUrl(String uploaderUrl) {
+    public void setUploaderUrl(final String uploaderUrl) {
         this.uploaderUrl = uploaderUrl;
+    }
+
+    @Nullable
+    public String getUploaderAvatarUrl() {
+        return uploaderAvatarUrl;
+    }
+
+    public void setUploaderAvatarUrl(final String uploaderAvatarUrl) {
+        this.uploaderAvatarUrl = uploaderAvatarUrl;
+    }
+
+    public String getShortDescription() {
+        return shortDescription;
+    }
+
+    public void setShortDescription(final String shortDescription) {
+        this.shortDescription = shortDescription;
     }
 
     @Nullable
@@ -85,8 +109,8 @@ public class StreamInfoItem extends InfoItem {
         return textualUploadDate;
     }
 
-    public void setTextualUploadDate(String uploadDate) {
-        this.textualUploadDate = uploadDate;
+    public void setTextualUploadDate(final String textualUploadDate) {
+        this.textualUploadDate = textualUploadDate;
     }
 
     @Nullable
@@ -94,24 +118,33 @@ public class StreamInfoItem extends InfoItem {
         return uploadDate;
     }
 
-    public void setUploadDate(@Nullable DateWrapper uploadDate) {
+    public void setUploadDate(@Nullable final DateWrapper uploadDate) {
         this.uploadDate = uploadDate;
+    }
+
+    public boolean isUploaderVerified() {
+        return uploaderVerified;
+    }
+
+    public void setUploaderVerified(final boolean uploaderVerified) {
+        this.uploaderVerified = uploaderVerified;
     }
 
     @Override
     public String toString() {
-        return "StreamInfoItem{" +
-                "streamType=" + streamType +
-                ", uploaderName='" + uploaderName + '\'' +
-                ", textualUploadDate='" + textualUploadDate + '\'' +
-                ", viewCount=" + viewCount +
-                ", duration=" + duration +
-                ", uploaderUrl='" + uploaderUrl + '\'' +
-                ", infoType=" + getInfoType() +
-                ", serviceId=" + getServiceId() +
-                ", url='" + getUrl() + '\'' +
-                ", name='" + getName() + '\'' +
-                ", thumbnailUrl='" + getThumbnailUrl() + '\'' +
-                '}';
+        return "StreamInfoItem{"
+                + "streamType=" + streamType
+                + ", uploaderName='" + uploaderName + '\''
+                + ", textualUploadDate='" + textualUploadDate + '\''
+                + ", viewCount=" + viewCount
+                + ", duration=" + duration
+                + ", uploaderUrl='" + uploaderUrl + '\''
+                + ", infoType=" + getInfoType()
+                + ", serviceId=" + getServiceId()
+                + ", url='" + getUrl() + '\''
+                + ", name='" + getName() + '\''
+                + ", thumbnailUrl='" + getThumbnailUrl() + '\''
+                + ", uploaderVerified='" + isUploaderVerified() + '\''
+                + '}';
     }
 }

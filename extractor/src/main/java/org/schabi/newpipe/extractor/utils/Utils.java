@@ -6,36 +6,59 @@ import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
-public class Utils {
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+public final class Utils {
 
     public static final String HTTP = "http://";
     public static final String HTTPS = "https://";
+    /**
+     * @deprecated Use {@link java.nio.charset.StandardCharsets#UTF_8}
+     */
+    @Deprecated
+    public static final String UTF_8 = "UTF-8";
+    private static final Pattern M_PATTERN = Pattern.compile("(https?)?://m\\.");
+    private static final Pattern WWW_PATTERN = Pattern.compile("(https?)?://www\\.");
 
     private Utils() {
-        //no instance
+        // no instance
     }
 
     /**
-     * Remove all non-digit characters from a string.<p>
-     * Examples:<p>
-     * <ul><li>1 234 567 views -&gt; 1234567</li>
-     * <li>$31,133.124 -&gt; 31133124</li></ul>
+     * Remove all non-digit characters from a string.
+     *
+     * <p>
+     * Examples:
+     * </p>
+     *
+     * <ul>
+     *     <li>1 234 567 views -&gt; 1234567</li>
+     *     <li>$31,133.124 -&gt; 31133124</li>
+     * </ul>
      *
      * @param toRemove string to remove non-digit chars
      * @return a string that contains only digits
      */
-    public static String removeNonDigitCharacters(String toRemove) {
+    @Nonnull
+    public static String removeNonDigitCharacters(@Nonnull final String toRemove) {
         return toRemove.replaceAll("\\D+", "");
     }
 
     /**
-     * <p>Convert a mixed number word to a long.</p>
-     * <p>Examples:</p>
+     * Convert a mixed number word to a long.
+     *
+     * <p>
+     * Examples:
+     * </p>
+     *
      * <ul>
      *     <li>123 -&gt; 123</li>
      *     <li>1.23K -&gt; 1230</li>
@@ -44,17 +67,16 @@ public class Utils {
      *
      * @param numberWord string to be converted to a long
      * @return a long
-     * @throws NumberFormatException
-     * @throws ParsingException
      */
-    public static long mixedNumberWordToLong(String numberWord) throws NumberFormatException, ParsingException {
+    public static long mixedNumberWordToLong(final String numberWord)
+            throws NumberFormatException, ParsingException {
         String multiplier = "";
         try {
             multiplier = Parser.matchGroup("[\\d]+([\\.,][\\d]+)?([KMBkmb])+", numberWord, 2);
-        } catch (ParsingException ignored) {
+        } catch (final ParsingException ignored) {
         }
-        double count = Double.parseDouble(Parser.matchGroup1("([\\d]+([\\.,][\\d]+)?)", numberWord)
-                .replace(",", "."));
+        final double count = Double.parseDouble(
+                Parser.matchGroup1("([\\d]+([\\.,][\\d]+)?)", numberWord).replace(",", "."));
         switch (multiplier.toUpperCase()) {
             case "K":
                 return (long) (count * 1e3);
@@ -73,7 +95,7 @@ public class Utils {
      * @param pattern the pattern that will be used to check the url
      * @param url     the url to be tested
      */
-    public static void checkUrl(String pattern, String url) throws ParsingException {
+    public static void checkUrl(final String pattern, final String url) throws ParsingException {
         if (isNullOrEmpty(url)) {
             throw new IllegalArgumentException("Url can't be null or empty");
         }
@@ -83,52 +105,51 @@ public class Utils {
         }
     }
 
-    public static void printErrors(List<Throwable> errors) {
-        for (Throwable e : errors) {
-            e.printStackTrace();
-            System.err.println("----------------");
-        }
-    }
-
     public static String replaceHttpWithHttps(final String url) {
-        if (url == null) return null;
+        if (url == null) {
+            return null;
+        }
 
-        if (!url.isEmpty() && url.startsWith(HTTP)) {
+        if (url.startsWith(HTTP)) {
             return HTTPS + url.substring(HTTP.length());
         }
         return url;
     }
 
     /**
-     * get the value of a URL-query by name.
-     * if a url-query is give multiple times, only the value of the first query is returned
+     * Get the value of a URL-query by name.
+     *
+     * <p>
+     * If an url-query is give multiple times, only the value of the first query is returned.
+     * </p>
      *
      * @param url           the url to be used
      * @param parameterName the pattern that will be used to check the url
-     * @return a string that contains the value of the query parameter or null if nothing was found
+     * @return a string that contains the value of the query parameter or {@code null} if nothing
+     * was found
      */
-    public static String getQueryValue(URL url, String parameterName) {
-        String urlQuery = url.getQuery();
+    @Nullable
+    public static String getQueryValue(@Nonnull final URL url,
+                                       final String parameterName) {
+        final String urlQuery = url.getQuery();
 
         if (urlQuery != null) {
-            for (String param : urlQuery.split("&")) {
-                String[] params = param.split("=", 2);
+            for (final String param : urlQuery.split("&")) {
+                final String[] params = param.split("=", 2);
 
                 String query;
                 try {
-                    query = URLDecoder.decode(params[0], "UTF-8");
-                } catch (UnsupportedEncodingException e) {
-                    System.err.println("Cannot decode string with UTF-8. using the string without decoding");
-                    e.printStackTrace();
+                    query = URLDecoder.decode(params[0], UTF_8);
+                } catch (final UnsupportedEncodingException e) {
+                    // Cannot decode string with UTF-8, using the string without decoding
                     query = params[0];
                 }
 
                 if (query.equals(parameterName)) {
                     try {
-                        return URLDecoder.decode(params[1], "UTF-8");
-                    } catch (UnsupportedEncodingException e) {
-                        System.err.println("Cannot decode string with UTF-8. using the string without decoding");
-                        e.printStackTrace();
+                        return URLDecoder.decode(params[1], UTF_8);
+                    } catch (final UnsupportedEncodingException e) {
+                        // Cannot decode string with UTF-8, using the string without decoding
                         return params[1];
                     }
                 }
@@ -139,17 +160,21 @@ public class Utils {
     }
 
     /**
-     * converts a string to a URL-Object.
-     * defaults to HTTP if no protocol is given
+     * Convert a string to a {@link URL URL object}.
+     *
+     * <p>
+     * Defaults to HTTP if no protocol is given.
+     * </p>
      *
      * @param url the string to be converted to a URL-Object
-     * @return a URL-Object containing the url
+     * @return a {@link URL URL object} containing the url
      */
-    public static URL stringToURL(String url) throws MalformedURLException {
+    @Nonnull
+    public static URL stringToURL(final String url) throws MalformedURLException {
         try {
             return new URL(url);
-        } catch (MalformedURLException e) {
-            // if no protocol is given try prepending "https://"
+        } catch (final MalformedURLException e) {
+            // If no protocol is given try prepending "https://"
             if (e.getMessage().equals("no protocol: " + url)) {
                 return new URL(HTTPS + url);
             }
@@ -158,59 +183,116 @@ public class Utils {
         }
     }
 
-    public static boolean isHTTP(URL url) {
-        // make sure its http or https
-        String protocol = url.getProtocol();
+    public static boolean isHTTP(@Nonnull final URL url) {
+        // Make sure it's HTTP or HTTPS
+        final String protocol = url.getProtocol();
         if (!protocol.equals("http") && !protocol.equals("https")) {
             return false;
         }
 
-        boolean usesDefaultPort = url.getPort() == url.getDefaultPort();
-        boolean setsNoPort = url.getPort() == -1;
+        final boolean usesDefaultPort = url.getPort() == url.getDefaultPort();
+        final boolean setsNoPort = url.getPort() == -1;
 
         return setsNoPort || usesDefaultPort;
     }
 
-    public static String removeUTF8BOM(String s) {
-        if (s.startsWith("\uFEFF")) {
-            s = s.substring(1);
+    public static String removeMAndWWWFromUrl(final String url) {
+        if (M_PATTERN.matcher(url).find()) {
+            return url.replace("m.", "");
         }
-        if (s.endsWith("\uFEFF")) {
-            s = s.substring(0, s.length() - 1);
+        if (WWW_PATTERN.matcher(url).find()) {
+            return url.replace("www.", "");
         }
-        return s;
+        return url;
     }
 
-    public static String getBaseUrl(String url) throws ParsingException {
-        URL uri;
+    @Nonnull
+    public static String removeUTF8BOM(@Nonnull final String s) {
+        String result = s;
+        if (result.startsWith("\uFEFF")) {
+            result = result.substring(1);
+        }
+        if (result.endsWith("\uFEFF")) {
+            result = result.substring(0, result.length() - 1);
+        }
+        return result;
+    }
+
+    @Nonnull
+    public static String getBaseUrl(final String url) throws ParsingException {
         try {
-            uri = stringToURL(url);
-        } catch (MalformedURLException e) {
+            final URL uri = stringToURL(url);
+            return uri.getProtocol() + "://" + uri.getAuthority();
+        } catch (final MalformedURLException e) {
+            final String message = e.getMessage();
+            if (message.startsWith("unknown protocol: ")) {
+                // Return just the protocol (e.g. vnd.youtube)
+                return message.substring("unknown protocol: ".length());
+            }
+
             throw new ParsingException("Malformed url: " + url, e);
         }
-        return uri.getProtocol() + "://" + uri.getAuthority();
+    }
+
+    /**
+     * If the provided url is a Google search redirect, then the actual url is extracted from the
+     * {@code url=} query value and returned, otherwise the original url is returned.
+     *
+     * @param url the url which can possibly be a Google search redirect
+     * @return an url with no Google search redirects
+     */
+    public static String followGoogleRedirectIfNeeded(final String url) {
+        // If the url is a redirect from a Google search, extract the actual URL
+        try {
+            final URL decoded = Utils.stringToURL(url);
+            if (decoded.getHost().contains("google") && decoded.getPath().equals("/url")) {
+                return URLDecoder.decode(Parser.matchGroup1("&url=([^&]+)(?:&|$)", url), UTF_8);
+            }
+        } catch (final Exception ignored) {
+        }
+
+        // URL is not a Google search redirect
+        return url;
     }
 
     public static boolean isNullOrEmpty(final String str) {
         return str == null || str.isEmpty();
     }
 
-    // can be used for JsonArrays
+    /**
+     * Checks if a collection is null or empty.
+     *
+     * <p>
+     * This method can be also used for {@link com.grack.nanojson.JsonArray JsonArray}s.
+     * </p>
+     *
+     * @param collection the collection on which check if it's null or empty
+     * @return whether the collection is null or empty
+     */
     public static boolean isNullOrEmpty(final Collection<?> collection) {
         return collection == null || collection.isEmpty();
     }
 
-    // can be used for JsonObjects
-    public static boolean isNullOrEmpty(final Map map) {
+    /**
+     * Checks if a {@link Map map} is null or empty.
+     *
+     * <p>
+     * This method can be also used for {@link com.grack.nanojson.JsonObject JsonObject}s.
+     * </p>
+     *
+     * @param map the {@link Map map} on which check if it's null or empty
+     * @return whether the {@link Map map} is null or empty
+     */
+    public static <K, V> boolean isNullOrEmpty(final Map<K, V> map) {
         return map == null || map.isEmpty();
     }
 
-    public static boolean isWhitespace(final int c){
+    public static boolean isWhitespace(final int c) {
         return c == ' ' || c == '\t' || c == '\n' || c == '\f' || c == '\r';
     }
 
     public static boolean isBlank(final String string) {
-        if (string == null || string.isEmpty()) {
+        if (isNullOrEmpty(string)) {
             return true;
         }
 
@@ -224,15 +306,111 @@ public class Utils {
         return true;
     }
 
-    public static String join(final CharSequence delimiter, final Iterable<? extends CharSequence> elements) {
-        final StringBuilder stringBuilder = new StringBuilder();
-        final Iterator<? extends CharSequence> iterator = elements.iterator();
-        while (iterator.hasNext()) {
-            stringBuilder.append(iterator.next());
-            if (iterator.hasNext()) {
-                stringBuilder.append(delimiter);
+    @Nonnull
+    public static String join(
+            final String delimiter,
+            final String mapJoin,
+            @Nonnull final Map<? extends CharSequence, ? extends CharSequence> elements) {
+        return elements.entrySet().stream()
+                .map(entry -> entry.getKey() + mapJoin + entry.getValue())
+                .collect(Collectors.joining(delimiter));
+    }
+
+    /**
+     * Concatenate all non-null, non-empty and strings which are not equal to <code>"null"</code>.
+     */
+    @Nonnull
+    public static String nonEmptyAndNullJoin(final CharSequence delimiter,
+                                             final String... elements) {
+        return Arrays.stream(elements)
+                .filter(s -> !isNullOrEmpty(s) && !s.equals("null"))
+                .collect(Collectors.joining(delimiter));
+    }
+
+    /**
+     * Find the result of an array of string regular expressions inside an input on the first
+     * group ({@code 0}).
+     *
+     * @param input   the input on which using the regular expressions
+     * @param regexes the string array of regular expressions
+     * @return the result
+     * @throws Parser.RegexException if none of the patterns match the input
+     */
+    @Nonnull
+    public static String getStringResultFromRegexArray(@Nonnull final String input,
+                                                       @Nonnull final String[] regexes)
+            throws Parser.RegexException {
+        return getStringResultFromRegexArray(input, regexes, 0);
+    }
+
+    /**
+     * Find the result of an array of {@link Pattern}s inside an input on the first group
+     * ({@code 0}).
+     *
+     * @param input   the input on which using the regular expressions
+     * @param regexes the {@link Pattern} array
+     * @return the result
+     * @throws Parser.RegexException if none of the patterns match the input
+     */
+    @Nonnull
+    public static String getStringResultFromRegexArray(@Nonnull final String input,
+                                                       @Nonnull final Pattern[] regexes)
+            throws Parser.RegexException {
+        return getStringResultFromRegexArray(input, regexes, 0);
+    }
+
+    /**
+     * Find the result of an array of string regular expressions inside an input on a specific
+     * group.
+     *
+     * @param input   the input on which using the regular expressions
+     * @param regexes the string array of regular expressions
+     * @param group   the group to match
+     * @return the result
+     * @throws Parser.RegexException if none of the patterns match the input, or at least in the
+     * specified group
+     */
+    @Nonnull
+    public static String getStringResultFromRegexArray(@Nonnull final String input,
+                                                       @Nonnull final String[] regexes,
+                                                       final int group)
+            throws Parser.RegexException {
+        return getStringResultFromRegexArray(input,
+                Arrays.stream(regexes)
+                        .filter(Objects::nonNull)
+                        .map(Pattern::compile)
+                        .toArray(Pattern[]::new),
+                group);
+    }
+
+    /**
+     * Find the result of an array of {@link Pattern}s inside an input on a specific
+     * group.
+     *
+     * @param input   the input on which using the regular expressions
+     * @param regexes the {@link Pattern} array
+     * @param group   the group to match
+     * @return the result
+     * @throws Parser.RegexException if none of the patterns match the input, or at least in the
+     * specified group
+     */
+    @Nonnull
+    public static String getStringResultFromRegexArray(@Nonnull final String input,
+                                                       @Nonnull final Pattern[] regexes,
+                                                       final int group)
+            throws Parser.RegexException {
+        for (final Pattern regex : regexes) {
+            try {
+                final String result = Parser.matchGroup(regex, input, group);
+                if (result != null) {
+                    return result;
+                }
+
+                // Continue if the result is null
+            } catch (final Parser.RegexException ignored) {
             }
         }
-        return stringBuilder.toString();
+
+        throw new Parser.RegexException("No regex matched the input on group " + group);
     }
 }

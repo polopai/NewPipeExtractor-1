@@ -7,16 +7,13 @@ import org.schabi.newpipe.extractor.stream.StreamInfoItemExtractor;
 import org.schabi.newpipe.extractor.stream.StreamType;
 
 import javax.annotation.Nullable;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.TimeZone;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeParseException;
 
 public class YoutubeFeedInfoItemExtractor implements StreamInfoItemExtractor {
     private final Element entryElement;
 
-    public YoutubeFeedInfoItemExtractor(Element entryElement) {
+    public YoutubeFeedInfoItemExtractor(final Element entryElement) {
         this.entryElement = entryElement;
     }
 
@@ -40,7 +37,8 @@ public class YoutubeFeedInfoItemExtractor implements StreamInfoItemExtractor {
 
     @Override
     public long getViewCount() {
-        return Long.parseLong(entryElement.getElementsByTag("media:statistics").first().attr("views"));
+        return Long.parseLong(entryElement.getElementsByTag("media:statistics").first()
+                .attr("views"));
     }
 
     @Override
@@ -55,6 +53,17 @@ public class YoutubeFeedInfoItemExtractor implements StreamInfoItemExtractor {
 
     @Nullable
     @Override
+    public String getUploaderAvatarUrl() throws ParsingException {
+        return null;
+    }
+
+    @Override
+    public boolean isUploaderVerified() throws ParsingException {
+        return false;
+    }
+
+    @Nullable
+    @Override
     public String getTextualUploadDate() {
         return entryElement.getElementsByTag("published").first().text();
     }
@@ -62,19 +71,12 @@ public class YoutubeFeedInfoItemExtractor implements StreamInfoItemExtractor {
     @Nullable
     @Override
     public DateWrapper getUploadDate() throws ParsingException {
-        final Date date;
         try {
-            final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss+00:00");
-            dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-            date = dateFormat.parse(getTextualUploadDate());
-        } catch (ParseException e) {
-            throw new ParsingException("Could not parse date (\"" + getTextualUploadDate() + "\")", e);
+            return new DateWrapper(OffsetDateTime.parse(getTextualUploadDate()));
+        } catch (final DateTimeParseException e) {
+            throw new ParsingException("Could not parse date (\"" + getTextualUploadDate() + "\")",
+                    e);
         }
-
-        final Calendar calendar = Calendar.getInstance();
-        calendar.setTime(date);
-
-        return new DateWrapper(calendar);
     }
 
     @Override

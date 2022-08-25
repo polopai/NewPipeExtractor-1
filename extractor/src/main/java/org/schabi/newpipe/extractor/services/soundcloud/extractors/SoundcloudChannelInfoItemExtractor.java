@@ -1,15 +1,15 @@
 package org.schabi.newpipe.extractor.services.soundcloud.extractors;
 
-import com.grack.nanojson.JsonObject;
-import org.schabi.newpipe.extractor.channel.ChannelInfoItemExtractor;
-
-import static org.schabi.newpipe.extractor.utils.JsonUtils.EMPTY_STRING;
 import static org.schabi.newpipe.extractor.utils.Utils.replaceHttpWithHttps;
+
+import com.grack.nanojson.JsonObject;
+
+import org.schabi.newpipe.extractor.channel.ChannelInfoItemExtractor;
 
 public class SoundcloudChannelInfoItemExtractor implements ChannelInfoItemExtractor {
     private final JsonObject itemObject;
 
-    public SoundcloudChannelInfoItemExtractor(JsonObject itemObject) {
+    public SoundcloudChannelInfoItemExtractor(final JsonObject itemObject) {
         this.itemObject = itemObject;
     }
 
@@ -25,9 +25,8 @@ public class SoundcloudChannelInfoItemExtractor implements ChannelInfoItemExtrac
 
     @Override
     public String getThumbnailUrl() {
-        String avatarUrl = itemObject.getString("avatar_url", EMPTY_STRING);
-        String avatarUrlBetterResolution = avatarUrl.replace("large.jpg", "crop.jpg");
-        return avatarUrlBetterResolution;
+        // An avatar URL with a better resolution
+        return itemObject.getString("avatar_url", "").replace("large.jpg", "crop.jpg");
     }
 
     @Override
@@ -41,7 +40,12 @@ public class SoundcloudChannelInfoItemExtractor implements ChannelInfoItemExtrac
     }
 
     @Override
+    public boolean isVerified() {
+        return itemObject.getBoolean("verified");
+    }
+
+    @Override
     public String getDescription() {
-        return itemObject.getString("description", EMPTY_STRING);
+        return itemObject.getString("description", "");
     }
 }

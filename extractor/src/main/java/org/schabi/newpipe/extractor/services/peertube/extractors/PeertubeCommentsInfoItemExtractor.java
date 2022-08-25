@@ -18,7 +18,9 @@ public class PeertubeCommentsInfoItemExtractor implements CommentsInfoItemExtrac
     private final String url;
     private final String baseUrl;
 
-    public PeertubeCommentsInfoItemExtractor(final JsonObject item, final PeertubeCommentsExtractor extractor) throws ParsingException {
+    public PeertubeCommentsInfoItemExtractor(final JsonObject item,
+                                             final PeertubeCommentsExtractor extractor)
+            throws ParsingException {
         this.item = item;
         this.url = extractor.getUrl();
         this.baseUrl = extractor.getBaseUrl();
@@ -34,7 +36,7 @@ public class PeertubeCommentsInfoItemExtractor implements CommentsInfoItemExtrac
         String value;
         try {
             value = JsonUtils.getString(item, "account.avatar.path");
-        } catch (Exception e) {
+        } catch (final Exception e) {
             value = "/client/assets/images/default-avatar.png";
         }
         return baseUrl + value;
@@ -57,17 +59,12 @@ public class PeertubeCommentsInfoItemExtractor implements CommentsInfoItemExtrac
     }
 
     @Override
-    public int getLikeCount() {
-        return -1;
-    }
-
-    @Override
     public String getCommentText() throws ParsingException {
         final String htmlText = JsonUtils.getString(item, "text");
         try {
             final Document doc = Jsoup.parse(htmlText);
             return doc.body().text();
-        } catch (Exception e) {
+        } catch (final Exception e) {
             return htmlText.replaceAll("(?s)<[^>]*>(\\s*<[^>]*>)*", "");
         }
     }
@@ -82,7 +79,7 @@ public class PeertubeCommentsInfoItemExtractor implements CommentsInfoItemExtrac
         String value;
         try {
             value = JsonUtils.getString(item, "account.avatar.path");
-        } catch (Exception e) {
+        } catch (final Exception e) {
             value = "/client/assets/images/default-avatar.png";
         }
         return baseUrl + value;
@@ -90,13 +87,15 @@ public class PeertubeCommentsInfoItemExtractor implements CommentsInfoItemExtrac
 
     @Override
     public String getUploaderName() throws ParsingException {
-        return JsonUtils.getString(item, "account.name") + "@" + JsonUtils.getString(item, "account.host");
+        return JsonUtils.getString(item, "account.name") + "@"
+                + JsonUtils.getString(item, "account.host");
     }
 
     @Override
     public String getUploaderUrl() throws ParsingException {
         final String name = JsonUtils.getString(item, "account.name");
         final String host = JsonUtils.getString(item, "account.host");
-        return ServiceList.PeerTube.getChannelLHFactory().fromId("accounts/" + name + "@" + host, baseUrl).getUrl();
+        return ServiceList.PeerTube.getChannelLHFactory()
+                .fromId("accounts/" + name + "@" + host, baseUrl).getUrl();
     }
 }

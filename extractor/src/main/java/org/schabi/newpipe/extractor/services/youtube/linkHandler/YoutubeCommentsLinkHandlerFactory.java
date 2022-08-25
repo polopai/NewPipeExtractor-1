@@ -1,39 +1,32 @@
 package org.schabi.newpipe.extractor.services.youtube.linkHandler;
 
-import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper.BASE_YOUTUBE_INTENT_URL;
-
 import org.schabi.newpipe.extractor.exceptions.FoundAdException;
 import org.schabi.newpipe.extractor.exceptions.ParsingException;
-import org.schabi.newpipe.extractor.linkhandler.ListLinkHandler;
 import org.schabi.newpipe.extractor.linkhandler.ListLinkHandlerFactory;
 
 import java.util.List;
 
-public class YoutubeCommentsLinkHandlerFactory extends ListLinkHandlerFactory {
+public final class YoutubeCommentsLinkHandlerFactory extends ListLinkHandlerFactory {
 
-    private static final YoutubeCommentsLinkHandlerFactory instance = new YoutubeCommentsLinkHandlerFactory();
+    private static final YoutubeCommentsLinkHandlerFactory INSTANCE
+            = new YoutubeCommentsLinkHandlerFactory();
+
+    private YoutubeCommentsLinkHandlerFactory() {
+    }
 
     public static YoutubeCommentsLinkHandlerFactory getInstance() {
-        return instance;
+        return INSTANCE;
     }
 
     @Override
-    public ListLinkHandler fromUrl(String url) throws ParsingException {
-        if (url.startsWith(BASE_YOUTUBE_INTENT_URL)){
-            return super.fromUrl(url, BASE_YOUTUBE_INTENT_URL);
-        } else {
-            return super.fromUrl(url);
-        }
+    public String getUrl(final String id) {
+        return "https://www.youtube.com/watch?v=" + id;
     }
 
     @Override
-    public String getUrl(String id) {
-        return "https://m.youtube.com/watch?v=" + id;
-    }
-
-    @Override
-    public String getId(String urlString) throws ParsingException, IllegalArgumentException {
-        return YoutubeStreamLinkHandlerFactory.getInstance().getId(urlString); //we need the same id, avoids duplicate code
+    public String getId(final String urlString) throws ParsingException, IllegalArgumentException {
+        // we need the same id, avoids duplicate code
+        return YoutubeStreamLinkHandlerFactory.getInstance().getId(urlString);
     }
 
     @Override
@@ -41,15 +34,17 @@ public class YoutubeCommentsLinkHandlerFactory extends ListLinkHandlerFactory {
         try {
             getId(url);
             return true;
-        } catch (FoundAdException fe) {
+        } catch (final FoundAdException fe) {
             throw fe;
-        } catch (ParsingException e) {
+        } catch (final ParsingException e) {
             return false;
         }
     }
 
     @Override
-    public String getUrl(String id, List<String> contentFilter, String sortFilter) throws ParsingException {
+    public String getUrl(final String id,
+                         final List<String> contentFilter,
+                         final String sortFilter) throws ParsingException {
         return getUrl(id);
     }
 }

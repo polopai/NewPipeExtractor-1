@@ -1,5 +1,6 @@
 package org.schabi.newpipe.extractor;
 
+import org.schabi.newpipe.extractor.services.bandcamp.BandcampService;
 import org.schabi.newpipe.extractor.services.media_ccc.MediaCCCService;
 import org.schabi.newpipe.extractor.services.peertube.PeertubeService;
 import org.schabi.newpipe.extractor.services.soundcloud.SoundcloudService;
@@ -30,6 +31,7 @@ import java.util.List;
 /**
  * A list of supported services.
  */
+@SuppressWarnings({"ConstantName", "InnerAssignment"}) // keep unusual names and inner assignments
 public final class ServiceList {
     private ServiceList() {
         //no instance
@@ -39,6 +41,7 @@ public final class ServiceList {
     public static final SoundcloudService SoundCloud;
     public static final MediaCCCService MediaCCC;
     public static final PeertubeService PeerTube;
+    public static final BandcampService Bandcamp;
 
     /**
      * When creating a new service, put this service in the end of this list,
@@ -49,7 +52,8 @@ public final class ServiceList {
                     YouTube = new YoutubeService(0),
                     SoundCloud = new SoundcloudService(1),
                     MediaCCC = new MediaCCCService(2),
-                    PeerTube = new PeertubeService(3)
+                    PeerTube = new PeertubeService(3),
+                    Bandcamp = new BandcampService(4)
             ));
 
     /**

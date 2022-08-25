@@ -2,8 +2,10 @@ package org.schabi.newpipe.extractor.services.youtube.extractors;
 
 import com.grack.nanojson.JsonObject;
 
+import org.schabi.newpipe.extractor.ListExtractor;
 import org.schabi.newpipe.extractor.channel.ChannelInfoItemExtractor;
 import org.schabi.newpipe.extractor.exceptions.ParsingException;
+import org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper;
 import org.schabi.newpipe.extractor.services.youtube.linkHandler.YoutubeChannelLinkHandlerFactory;
 import org.schabi.newpipe.extractor.utils.Utils;
 
@@ -31,19 +33,20 @@ import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper
  */
 
 public class YoutubeChannelInfoItemExtractor implements ChannelInfoItemExtractor {
-    private JsonObject channelInfoItem;
+    private final JsonObject channelInfoItem;
 
-    public YoutubeChannelInfoItemExtractor(JsonObject channelInfoItem) {
+    public YoutubeChannelInfoItemExtractor(final JsonObject channelInfoItem) {
         this.channelInfoItem = channelInfoItem;
     }
 
     @Override
     public String getThumbnailUrl() throws ParsingException {
         try {
-            String url = channelInfoItem.getObject("thumbnail").getArray("thumbnails").getObject(0).getString("url");
+            final String url = channelInfoItem.getObject("thumbnail").getArray("thumbnails")
+                    .getObject(0).getString("url");
 
             return fixThumbnailUrl(url);
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new ParsingException("Could not get thumbnail url", e);
         }
     }
@@ -52,7 +55,7 @@ public class YoutubeChannelInfoItemExtractor implements ChannelInfoItemExtractor
     public String getName() throws ParsingException {
         try {
             return getTextFromObject(channelInfoItem.getObject("title"));
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new ParsingException("Could not get name", e);
         }
     }
@@ -60,9 +63,9 @@ public class YoutubeChannelInfoItemExtractor implements ChannelInfoItemExtractor
     @Override
     public String getUrl() throws ParsingException {
         try {
-            String id = "channel/" + channelInfoItem.getString("channelId");
+            final String id = "channel/" + channelInfoItem.getString("channelId");
             return YoutubeChannelLinkHandlerFactory.getInstance().getUrl(id);
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new ParsingException("Could not get url", e);
         }
     }
@@ -75,8 +78,9 @@ public class YoutubeChannelInfoItemExtractor implements ChannelInfoItemExtractor
                 return -1;
             }
 
-            return Utils.mixedNumberWordToLong(getTextFromObject(channelInfoItem.getObject("subscriberCountText")));
-        } catch (Exception e) {
+            return Utils.mixedNumberWordToLong(getTextFromObject(
+                    channelInfoItem.getObject("subscriberCountText")));
+        } catch (final Exception e) {
             throw new ParsingException("Could not get subscriber count", e);
         }
     }
@@ -86,14 +90,19 @@ public class YoutubeChannelInfoItemExtractor implements ChannelInfoItemExtractor
         try {
             if (!channelInfoItem.has("videoCountText")) {
                 // Video count is not available, channel probably has no public uploads.
-                return -1;
+                return ListExtractor.ITEM_COUNT_UNKNOWN;
             }
 
             return Long.parseLong(Utils.removeNonDigitCharacters(getTextFromObject(
                     channelInfoItem.getObject("videoCountText"))));
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new ParsingException("Could not get stream count", e);
         }
+    }
+
+    @Override
+    public boolean isVerified() throws ParsingException {
+        return YoutubeParsingHelper.isVerified(channelInfoItem.getArray("ownerBadges"));
     }
 
     @Override
@@ -105,7 +114,7 @@ public class YoutubeChannelInfoItemExtractor implements ChannelInfoItemExtractor
             }
 
             return getTextFromObject(channelInfoItem.getObject("descriptionSnippet"));
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new ParsingException("Could not get description", e);
         }
     }

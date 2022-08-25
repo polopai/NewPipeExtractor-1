@@ -1,5 +1,8 @@
 package org.schabi.newpipe.extractor.services.media_ccc.extractors;
 
+import static org.schabi.newpipe.extractor.stream.AudioStream.UNKNOWN_BITRATE;
+import static org.schabi.newpipe.extractor.stream.Stream.ID_UNKNOWN;
+
 import com.grack.nanojson.JsonArray;
 import com.grack.nanojson.JsonObject;
 import com.grack.nanojson.JsonParser;
@@ -12,25 +15,23 @@ import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.schabi.newpipe.extractor.exceptions.ParsingException;
 import org.schabi.newpipe.extractor.linkhandler.LinkHandler;
 import org.schabi.newpipe.extractor.localization.DateWrapper;
+import org.schabi.newpipe.extractor.localization.Localization;
+import org.schabi.newpipe.extractor.services.media_ccc.linkHandler.MediaCCCConferenceLinkHandlerFactory;
+import org.schabi.newpipe.extractor.services.media_ccc.linkHandler.MediaCCCStreamLinkHandlerFactory;
 import org.schabi.newpipe.extractor.stream.AudioStream;
 import org.schabi.newpipe.extractor.stream.Description;
 import org.schabi.newpipe.extractor.stream.StreamExtractor;
-import org.schabi.newpipe.extractor.stream.StreamInfoItemsCollector;
 import org.schabi.newpipe.extractor.stream.StreamType;
-import org.schabi.newpipe.extractor.stream.SubtitlesStream;
 import org.schabi.newpipe.extractor.stream.VideoStream;
-import org.schabi.newpipe.extractor.services.media_ccc.linkHandler.MediaCCCConferenceLinkHandlerFactory;
-import org.schabi.newpipe.extractor.services.media_ccc.linkHandler.MediaCCCStreamLinkHandlerFactory;
+import org.schabi.newpipe.extractor.utils.JsonUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 public class MediaCCCStreamExtractor extends StreamExtractor {
     private JsonObject data;
@@ -65,33 +66,13 @@ public class MediaCCCStreamExtractor extends StreamExtractor {
     }
 
     @Override
-    public int getAgeLimit() {
-        return 0;
-    }
-
-    @Override
     public long getLength() {
         return data.getInt("length");
     }
 
     @Override
-    public long getTimeStamp() {
-        return 0;
-    }
-
-    @Override
     public long getViewCount() {
         return data.getInt("view_count");
-    }
-
-    @Override
-    public long getLikeCount() {
-        return -1;
-    }
-
-    @Override
-    public long getDislikeCount() {
-        return -1;
     }
 
     @Nonnull
@@ -113,36 +94,6 @@ public class MediaCCCStreamExtractor extends StreamExtractor {
         return conferenceData.getString("logo_url");
     }
 
-    @Nonnull
-    @Override
-    public String getSubChannelUrl() {
-        return "";
-    }
-
-    @Nonnull
-    @Override
-    public String getSubChannelName() {
-        return "";
-    }
-
-    @Nonnull
-    @Override
-    public String getSubChannelAvatarUrl() {
-        return "";
-    }
-
-    @Nonnull
-    @Override
-    public String getDashMpdUrl() {
-        return "";
-    }
-
-    @Nonnull
-    @Override
-    public String getHlsUrl() {
-        return "";
-    }
-
     @Override
     public List<AudioStream> getAudioStreams() throws ExtractionException {
         final JsonArray recordings = data.getArray("recordings");
@@ -151,7 +102,7 @@ public class MediaCCCStreamExtractor extends StreamExtractor {
             final JsonObject recording = recordings.getObject(i);
             final String mimeType = recording.getString("mime_type");
             if (mimeType.startsWith("audio")) {
-                //first we need to resolve the actual video data from CDN
+                // First we need to resolve the actual video data from the CDN
                 final MediaFormat mediaFormat;
                 if (mimeType.endsWith("opus")) {
                     mediaFormat = MediaFormat.OPUS;
@@ -160,11 +111,18 @@ public class MediaCCCStreamExtractor extends StreamExtractor {
                 } else if (mimeType.endsWith("ogg")) {
                     mediaFormat = MediaFormat.OGG;
                 } else {
-                    throw new ExtractionException("Unknown media format: " + mimeType);
+                    mediaFormat = null;
                 }
 
-                audioStreams.add(new AudioStream(recording.getString("recording_url"),
-                        mediaFormat, -1));
+                // Not checking containsSimilarStream here, since MediaCCC does not provide enough
+                // information to decide whether two streams are similar. Hence that method would
+                // always return false, e.g. even for different language variations.
+                audioStreams.add(new AudioStream.Builder()
+                        .setId(recording.getString("filename", ID_UNKNOWN))
+                        .setContent(recording.getString("recording_url"), true)
+                        .setMediaFormat(mediaFormat)
+                        .setAverageBitrate(UNKNOWN_BITRATE)
+                        .build());
             }
         }
         return audioStreams;
@@ -178,21 +136,29 @@ public class MediaCCCStreamExtractor extends StreamExtractor {
             final JsonObject recording = recordings.getObject(i);
             final String mimeType = recording.getString("mime_type");
             if (mimeType.startsWith("video")) {
-                //first we need to resolve the actual video data from CDN
-
+                // First we need to resolve the actual video data from the CDN
                 final MediaFormat mediaFormat;
                 if (mimeType.endsWith("webm")) {
                     mediaFormat = MediaFormat.WEBM;
                 } else if (mimeType.endsWith("mp4")) {
                     mediaFormat = MediaFormat.MPEG_4;
                 } else {
-                    throw new ExtractionException("Unknown media format: " + mimeType);
+                    mediaFormat = null;
                 }
 
-                videoStreams.add(new VideoStream(recording.getString("recording_url"),
-                        mediaFormat, recording.getInt("height") + "p"));
+                // Not checking containsSimilarStream here, since MediaCCC does not provide enough
+                // information to decide whether two streams are similar. Hence that method would
+                // always return false, e.g. even for different language variations.
+                videoStreams.add(new VideoStream.Builder()
+                        .setId(recording.getString("filename", ID_UNKNOWN))
+                        .setContent(recording.getString("recording_url"), true)
+                        .setIsVideoOnly(false)
+                        .setMediaFormat(mediaFormat)
+                        .setResolution(recording.getInt("height") + "p")
+                        .build());
             }
         }
+
         return videoStreams;
     }
 
@@ -201,32 +167,9 @@ public class MediaCCCStreamExtractor extends StreamExtractor {
         return Collections.emptyList();
     }
 
-    @Nonnull
-    @Override
-    public List<SubtitlesStream> getSubtitlesDefault() {
-        return Collections.emptyList();
-    }
-
-    @Nonnull
-    @Override
-    public List<SubtitlesStream> getSubtitles(final MediaFormat format) {
-        return Collections.emptyList();
-    }
-
     @Override
     public StreamType getStreamType() {
         return StreamType.VIDEO_STREAM;
-    }
-
-    @Nullable
-    @Override
-    public StreamInfoItemsCollector getRelatedStreams() {
-        return null;
-    }
-
-    @Override
-    public String getErrorMessage() {
-        return null;
     }
 
     @Override
@@ -237,8 +180,9 @@ public class MediaCCCStreamExtractor extends StreamExtractor {
             data = JsonParser.object().from(downloader.get(videoUrl).responseBody());
             conferenceData = JsonParser.object()
                     .from(downloader.get(data.getString("conference_url")).responseBody());
-        } catch (JsonParserException jpe) {
-            throw new ExtractionException("Could not parse json returned by url: " + videoUrl, jpe);
+        } catch (final JsonParserException jpe) {
+            throw new ExtractionException("Could not parse json returned by URL: " + videoUrl,
+                    jpe);
         }
     }
 
@@ -254,44 +198,14 @@ public class MediaCCCStreamExtractor extends StreamExtractor {
         return data.getString("frontend_link");
     }
 
-    @Nonnull
     @Override
-    public String getHost() {
-        return "";
-    }
-
-    @Nonnull
-    @Override
-    public String getPrivacy() {
-        return "";
-    }
-
-    @Nonnull
-    @Override
-    public String getCategory() {
-        return "";
-    }
-
-    @Nonnull
-    @Override
-    public String getLicence() {
-        return "";
-    }
-
-    @Override
-    public Locale getLanguageInfo() {
-        return null;
+    public Locale getLanguageInfo() throws ParsingException {
+        return Localization.getLocaleFromThreeLetterCode(data.getString("original_language"));
     }
 
     @Nonnull
     @Override
     public List<String> getTags() {
-        return Arrays.asList(data.getArray("tags").toArray(new String[0]));
-    }
-
-    @Nonnull
-    @Override
-    public String getSupportInfo() {
-        return "";
+        return JsonUtils.getStringListFromJsonArray(data.getArray("tags"));
     }
 }

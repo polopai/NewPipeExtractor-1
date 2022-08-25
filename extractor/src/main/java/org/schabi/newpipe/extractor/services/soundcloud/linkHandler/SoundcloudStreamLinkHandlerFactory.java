@@ -6,36 +6,36 @@ import org.schabi.newpipe.extractor.services.soundcloud.SoundcloudParsingHelper;
 import org.schabi.newpipe.extractor.utils.Parser;
 import org.schabi.newpipe.extractor.utils.Utils;
 
-public class SoundcloudStreamLinkHandlerFactory extends LinkHandlerFactory {
-    private static final SoundcloudStreamLinkHandlerFactory instance = new SoundcloudStreamLinkHandlerFactory();
-    private final String URL_PATTERN = "^https?://(www\\.|m\\.)?soundcloud.com/[0-9a-z_-]+" +
-            "/(?!(tracks|albums|sets|reposts|followers|following)/?$)[0-9a-z_-]+/?([#?].*)?$";
+public final class SoundcloudStreamLinkHandlerFactory extends LinkHandlerFactory {
+    private static final SoundcloudStreamLinkHandlerFactory INSTANCE
+            = new SoundcloudStreamLinkHandlerFactory();
+    private static final String URL_PATTERN = "^https?://(www\\.|m\\.)?soundcloud.com/[0-9a-z_-]+"
+            + "/(?!(tracks|albums|sets|reposts|followers|following)/?$)[0-9a-z_-]+/?([#?].*)?$";
 
     private SoundcloudStreamLinkHandlerFactory() {
     }
 
     public static SoundcloudStreamLinkHandlerFactory getInstance() {
-        return instance;
+        return INSTANCE;
     }
 
     @Override
-    public String getUrl(String id) throws ParsingException {
+    public String getUrl(final String id) throws ParsingException {
         try {
-            return SoundcloudParsingHelper.resolveUrlWithEmbedPlayer("https://api.soundcloud.com/tracks/" + id);
-        } catch (Exception e) {
+            return SoundcloudParsingHelper.resolveUrlWithEmbedPlayer(
+                    "https://api.soundcloud.com/tracks/" + id);
+        } catch (final Exception e) {
             throw new ParsingException(e.getMessage(), e);
         }
     }
 
     @Override
-    public String getId(String url) throws ParsingException {
+    public String getId(final String url) throws ParsingException {
         Utils.checkUrl(URL_PATTERN, url);
-        // Remove the tailing slash from URLs due to issues with the SoundCloud API
-        if (url.charAt(url.length() -1) == '/') url = url.substring(0, url.length()-1);
 
         try {
-            return SoundcloudParsingHelper.resolveIdWithEmbedPlayer(url);
-        } catch (Exception e) {
+            return SoundcloudParsingHelper.resolveIdWithWidgetApi(url);
+        } catch (final Exception e) {
             throw new ParsingException(e.getMessage(), e);
         }
     }

@@ -4,6 +4,7 @@ import org.schabi.newpipe.extractor.StreamingService;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.schabi.newpipe.extractor.exceptions.ParsingException;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,16 +22,17 @@ public abstract class SubscriptionExtractor {
             this(null, null);
         }
 
-        public InvalidSourceException(String detailMessage) {
+        public InvalidSourceException(@Nullable final String detailMessage) {
             this(detailMessage, null);
         }
 
-        public InvalidSourceException(Throwable cause) {
+        public InvalidSourceException(final Throwable cause) {
             this(null, cause);
         }
 
-        public InvalidSourceException(String detailMessage, Throwable cause) {
-            super(detailMessage == null ? "Not a valid source" : "Not a valid source (" + detailMessage + ")", cause);
+        public InvalidSourceException(@Nullable final String detailMessage, final Throwable cause) {
+            super("Not a valid source" + (detailMessage == null ? "" : " (" + detailMessage + ")"),
+                    cause);
         }
     }
 
@@ -41,7 +43,8 @@ public abstract class SubscriptionExtractor {
     private final List<ContentSource> supportedSources;
     protected final StreamingService service;
 
-    public SubscriptionExtractor(StreamingService service, List<ContentSource> supportedSources) {
+    public SubscriptionExtractor(final StreamingService service,
+                                 final List<ContentSource> supportedSources) {
         this.service = service;
         this.supportedSources = Collections.unmodifiableList(supportedSources);
     }
@@ -51,7 +54,8 @@ public abstract class SubscriptionExtractor {
     }
 
     /**
-     * Returns an url that can help/guide the user to the file (or channel url) to extract the subscriptions.
+     * Returns an url that can help/guide the user to the file (or channel url) to extract the
+     * subscriptions.
      * <p>For example, in YouTube, the export subscriptions url is a good choice to return here.</p>
      */
     @Nullable
@@ -62,17 +66,34 @@ public abstract class SubscriptionExtractor {
      *
      * @throws InvalidSourceException when the channelUrl doesn't exist or is invalid
      */
-    public List<SubscriptionItem> fromChannelUrl(String channelUrl) throws IOException, ExtractionException {
-        throw new UnsupportedOperationException("Service " + service.getServiceInfo().getName() + " doesn't support extracting from a channel url");
+    public List<SubscriptionItem> fromChannelUrl(final String channelUrl)
+            throws IOException, ExtractionException {
+        throw new UnsupportedOperationException("Service " + service.getServiceInfo().getName()
+                + " doesn't support extracting from a channel url");
     }
 
     /**
      * Reads and parse a list of {@link SubscriptionItem} from the given InputStream.
      *
-     * @throws InvalidSourceException when the content read from the InputStream is invalid and can not be parsed
+     * @throws InvalidSourceException when the content read from the InputStream is invalid and can
+     *                                not be parsed
      */
-    @SuppressWarnings("RedundantThrows")
-    public List<SubscriptionItem> fromInputStream(InputStream contentInputStream) throws IOException, ExtractionException {
-        throw new UnsupportedOperationException("Service " + service.getServiceInfo().getName() + " doesn't support extracting from an InputStream");
+    public List<SubscriptionItem> fromInputStream(@Nonnull final InputStream contentInputStream)
+            throws ExtractionException {
+        throw new UnsupportedOperationException("Service " + service.getServiceInfo().getName()
+                + " doesn't support extracting from an InputStream");
+    }
+
+    /**
+     * Reads and parse a list of {@link SubscriptionItem} from the given InputStream.
+     *
+     * @throws InvalidSourceException when the content read from the InputStream is invalid and can
+     *                                not be parsed
+     */
+    public List<SubscriptionItem> fromInputStream(@Nonnull final InputStream contentInputStream,
+                                                  @Nonnull final String contentType)
+            throws ExtractionException {
+        throw new UnsupportedOperationException("Service " + service.getServiceInfo().getName()
+                + " doesn't support extracting from an InputStream");
     }
 }
